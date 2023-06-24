@@ -71,16 +71,70 @@ df = spark.read.csv(path="path", sep=",",header=True)
 -  We can mention libraries PyPI, maven, etc e wish to install in the library tab
 -  We can edit the configuration by using the edit link, and can also access a JSON file to create clusters using cluster API via Powershell.
 
+## Read data from different format
+- Under **_Data_ on navigation** -> select DBFS
+- tables-> upload file -> copy path
+- `Display(df)` command shows better output than `show()`
+- Avro files creates partition which help data retrieval as sparks read subset of data based on query
+
+## What is DBFS
+- Databriks File System(DBFS) is a distributed fie system mounted into Databricks workspace and available on Databricks clusters.
+- DBFS is an abstraction on top of scalable object store in order to have more control on data.
+- Databricks recommends to use your own storage mount on data bricks like Azure blob storage, The DBFS root is not intended for production customer data.
 
 
 
 
 
+# Code snippets
+- read file
+```
+df = spark.read.csv(path="path", sep=",",header=True)
+```
+
+```
+%scala
+
+val testJson = spark.read.json("/tmp/test.json")
+// read multiline json
+val mldf  = spark.read.option("multiline", "true").json("/tmp/test.json")
+
+```
+- Read parquet files
+```
+%scala
+
+case class MyCaseClass(key: String, group: String, value: Int, someints: Seq[Int], somemap: Map[String, Int])
+//parallerlize creats rdd and .toDF() creates dataframe
+val dataframe = sc.parallerize(Array(MyCaseClass("a", "vowels", 1, Array(1), Map("a" -> 1)),
+Array(MyCaseClass("a", "vowels", 1, Array(1), Map("a" -> 1)))
+).toDF()
+dataframe.write.mode("overwrite").parquet("/tmp/testParquet")
+
+```
+
+- Read Avro format
+```
+%scala
+
+val df = Seq((2012, 8, "Batman", 8.8),
+(2012, 8, "hero", 7,3))
+.toDF("year", "month", "title", "rating")
+//different files will be created under  year dir =-->  month dir as we have partiotion by those 
+df.write.mode("overwrite").partitionBy("year", "month").format("avro").save("/tmp/test")
+
+```
 
 
+- Create JSON file in Scala
+```
+%scala
 
-
-
+dbutils.fs.put("/tmp/test.json", """
+{"string":"string1","int":1,"array":[1,2],"dict":{"key":"value1"}}
+{"string":"string2","int":2,"array":[2,3],"dict":{"key":"value2"}}
+""", true)
+```
 
 
 
