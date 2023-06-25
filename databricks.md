@@ -78,10 +78,13 @@ df = spark.read.csv(path="path", sep=",",header=True)
 - Avro files creates partition which help data retrieval as sparks read subset of data based on query
 
 ## What is DBFS
-- Databriks File System(DBFS) is a distributed fie system mounted into Databricks workspace and available on Databricks clusters.
-- DBFS is an abstraction on top of scalable object store in order to have more control on data.
-- Databricks recommends to use your own storage mount on data bricks like Azure blob storage, The DBFS root is not intended for production customer data.
-
+- Databriks File System(DBFS) is a distributed file system mounted into Databricks workspace and available on Databricks clusters.
+- DBFS is an abstraction on top of scalable object store 
+- Databricks recommends using your own storage mount on data bricks like Azure blob storage in order to have more control on data. The DBFS root is not intended for the production data.
+- **DBFS Root**
+  - The default storage location on DBFS is known as the DBFS root.
+  - Several types of data are stored in the following DBFS rot locations:
+    - 
 
 
 
