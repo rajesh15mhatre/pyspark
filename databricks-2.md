@@ -83,7 +83,23 @@ peiple.write \
 display(spark.sql("SELECT * FROM people10m"))
 ```
 
+## Drop table 
 
+```
+table_name = 'people10m'
+display (spark.sql("DROP TABLE IF EXISTS " + table_name))
+
+```
+
+## Query table and df
+```
+# query table
+display(spark.table(table_name).select("id", "salary").orderBy("salary", ascending= False))
+# query df
+display(spark.table(table_name).select("gender").orderBy("gender", ascending= False).groupBy('gender').count())
+
+
+```
 
 
 
