@@ -41,3 +41,57 @@ display(fullHistoryDF)
 ```
 
 
+## Read Databrics sample dataset in python
+```
+read_format= 'delta'
+load_path = '/databricks-datasets/learning-spark-v2/people/people-10m.delta'
+ # Load data
+people = spark.read \
+    .format(read_format) \
+    .load(load_path)
+
+# Show result
+display(people)
+```
+
+## Write DataFrame as Databricks Delta data in python
+```
+# Define the output format, output mode, columns to partition by, and the output path
+# unmanaged tables
+write_format = 'delta'
+write_mode = 'overwrite'
+partition_by = 'gender'
+save_path = '/tmp/delta/people-10m'
+
+# Write the data to its target
+people.write \
+    .fomat(write_format) \
+    .partitionBy(partition_by) \
+    .mode(write_mode) \
+    .save(save_path)
+
+```
+
+## Create delta file without specifying path 
+```
+# Managed table
+# For example tables and Databrixks determine the location of the data. to get the location, you can use the DESCRIBE DETAIL statement, for example
+
+peiple.write \
+    .format("delta") \
+    .saveAsTable("people10m") \
+display(spark.sql("SELECT * FROM people10m"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
