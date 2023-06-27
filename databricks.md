@@ -43,33 +43,37 @@ df = spark.read.csv(path="path", sep=",",header=True)
 
 # Databricks cluster creation and configuration
 - Excutoer cores Runs in parallel
-- Under **compute** tab -> click on create cluster
+- Under **compute** tab -> select the **type of cluster** and  click on create the cluster
   - All-purpose clusters: dev tasks 
   - job cluster: prod task
   - Give name
-- select mode:
+- select **cluster mode**:
   - high concurrency: concurrent and no support to scala. Suitable for multiple users
   - standard: single user, all language support
   - Single node: cluster with no worker. for small data volume
-- Select Databricks runtime version:
-  - Standard: go for std, select 2nd latest, check versions of spark and programming language
+- Select **Databricks runtime version**:
+  - Standard: go for std, select 2nd latest, check versions of spark and spark programming language
   - Genomics
-  - ML
-- check **photon** for a lot of sql queries used and optimize workload
-- Worker Type
+  - ML - Iterative
+  - check **photon** for a lot of sql queries used and optimize workload - vectorized engine
+- Auto pilot options:
+  - Enable autoscaling checkbox - specify min-max worker
+  - Terminate after x time of inactivity
+- Worker Type instance
   - Choose a worker machine and the number of workers which equals one executor
   - No of worker equals to no of partitions
   - Avoid HDD
   - complex operation select storage optimize
 - Driver types: select VM
-- We can terminate after a certain time to save money
-- We can write extra configuration on the spark config text box
-- check spot instances to save money
-- under Logging select log path
-- init script  bootstrap script
--  Click on Create a cluster
--  We can mention libraries PyPI, maven, etc e wish to install in the library tab
--  We can edit the configuration by using the edit link, and can also access a JSON file to create clusters using cluster API via Powershell.
+- We can terminate after a certain time of no activity  to save money
+- **Advance options**
+  - We can write extra configuration on the spark config text box
+  - check spot instances to save money
+  - under Logging select log path under DBFS
+  - init script  bootstrap script
+  -  Click on Create a cluster
+  -  We can mention libraries PyPI, maven, etc e wish to install in the library tab
+  -  We can edit the configuration by using the edit link, and can also access a JSON file to create clusters using cluster API via Powershell.
 
 ## Read data from different format
 - Under **_Data_ on navigation** -> select DBFS
