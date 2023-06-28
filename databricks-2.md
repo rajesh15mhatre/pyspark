@@ -72,7 +72,7 @@ people.write \
 
 ```
 
-## Create delta file without specifying path 
+## Create a delta file without specifying the path  then its create a table under databricks tables
 ```
 # Managed table
 # For example tables and Databrixks determine the location of the data. to get the location, you can use the DESCRIBE DETAIL statement, for example
@@ -97,11 +97,14 @@ display (spark.sql("DROP TABLE IF EXISTS " + table_name))
 display(spark.table(table_name).select("id", "salary").orderBy("salary", ascending= False))
 # query df
 display(spark.table(table_name).select("gender").orderBy("gender", ascending= False).groupBy('gender').count())
+```
+
+# timetravel/ versioning in delta table
 
 
 ```
 
-
+```
 
 
 
