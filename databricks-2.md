@@ -101,10 +101,76 @@ display(spark.table(table_name).select("gender").orderBy("gender", ascending= Fa
 
 # timetravel/ versioning in delta table
 
+- File contents
+ - parquet files
+ - _delta_log dir
+  - json file
+  - crc checkpoint file
+- versioning steps
+ - connect to datalake
+ -  Read file from datalake using scala
+```
+val read_format = 'delta'
+val load_path = "abfdss://testcontainer@test.dfs.core.windows.net/test"
+// Load files
+val read_delta = spark
+  .read
+  .format(read_format)
+  .load(load_path)
+display(read_delta)
+```
+  - ferch history
+```
+import io.delta.tables._
 
+val deltaTable = DeltaTable.forPath(spark, "abfdss://testcontainer@test.dfs.core.windows.net/test")
+
+val fillHistoryDF = deltaTabel.history()
+display(fullHistoryDF)
+```
+  - Read csv file from datalake and overwrite deltatable
+```
+//Readd file
+val df_datalake =spark.read.format("csv).option("header", "true").load("abfss://testcontainer@test.dfs.core.windows.net/sample.csv")
+display(df_datalake)
+//  overwrite
+df_datalake.wrirte.format.("delta").mode("overwrite").save("abfdss://testcontainer@test.dfs.core.windows.net/test");
 ```
 
+  - Read delta file to see the updated contents using the above command and also check the history
+  - Read the previous version of the delta file using  version numbers  and also by using the timestamp
 ```
+%python 
+df2 = spark.read.format("delta").option("versionAsOf", 0).load.("path")
+display(df2)
+//Take timestamp from history command
+timestamp_string = "2020-02-01T12:34:00.000"
+df2 = spark.read.format("delta").option("timestampAsOf", timestamp_string).load.("path")
+display(df2)
+```
+
+Using SQL also we can fetch  the previous versions
+```
+%sql
+SELECT * FROM delta.'pathToDelta' VERSION AS OF 0;
+SELECT * FROM delta.'pathToDelta TIMESTAMP AS OF  '2020-02-01T12:34:00.000';
+```
+
+Restore the previous version of delta file using the version and timestamp
+
+```
+%sql 
+
+RESTORE TABLE delta.'pathtoDelta' TO VERSION AS OF 3;
+--RESTORE TABLE delta.'pathtoDelta' TO TIMESTAMP AS OF '2020-02-01T12:34:00.000';
+```
+  
+
+  
+  
+  
+  
+# Vaccume command
 
 
 
