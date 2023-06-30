@@ -152,8 +152,8 @@ display(df2)
 Using SQL also we can fetch  the previous versions
 ```
 %sql
-SELECT * FROM delta.'pathToDelta' VERSION AS OF 0;
-SELECT * FROM delta.'pathToDelta TIMESTAMP AS OF  '2020-02-01T12:34:00.000';
+SELECT * FROM delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' VERSION AS OF 0;
+SELECT * FROM delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' TIMESTAMP AS OF  '2020-02-01T12:34:00.000';
 ```
 
 Restore the previous version of delta file using the version and timestamp
@@ -161,16 +161,34 @@ Restore the previous version of delta file using the version and timestamp
 ```
 %sql 
 
-RESTORE TABLE delta.'pathtoDelta' TO VERSION AS OF 3;
---RESTORE TABLE delta.'pathtoDelta' TO TIMESTAMP AS OF '2020-02-01T12:34:00.000';
+RESTORE TABLE delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' TO VERSION AS OF 3;
+--RESTORE TABLE delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' TO TIMESTAMP AS OF '2020-02-01T12:34:00.000';
 ```
   
+## Vacuum on delta  table 
+- Vacuum command deletes a set of files to which delta table is not referring
+ - vacuum command does not trigger automatically, do we need to run it manually or can be scheduled
+-  Default retention threshold for the files is 7 days, 168 hours
+- vacuum deletes only data files not log files
+- Log files are deleted automatically and asynchronously after checkpoint operations
+- The default retention period for log files is 30 days, configurable using delta.logRetensionDuration property
 
-  
-  
-  
-  
-# Vaccume command
+```
+%sql 
+SET spark.databricks.delta.retensionDurationCheck.enabled = True;
+```
+
+- Vacuum run command to **list files** which will get deleted. This command will give an error as we have set the retention period is 0 and the default is 164 hours which is 7 days. we can suppress error by changing the property to False given in the above command
+```
+%sql
+VACCUM delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' RETAIN 0 HOURS DRY RUN
+```
+
+- Vacuum run command to **delete files**
+```
+%sql
+VACCUM delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' RETAIN 0 HOURS
+```
 
 
 
