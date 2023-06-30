@@ -334,6 +334,177 @@ loans.option("mergeSchema", "true").format("delta").mode("append").save(DELTALAK
 We can also turn off errors by using `spark.databricks.delta.schema.autoMerge = True` into spark config
 
 
+## Transform Batch and stream data
+
+- Create a new DB and use it 
+```
+db = "deltadb"
+
+spark.sql(f"CREATE DATABASE IF NOT EXISTS {db})")
+spark.sql(f"USE {db}")
+
+```
+- create a folder and add a parquet file under DBFS
+
+```
+%sh mkdir -p /dbfs/tmp/delta_demo/loans_parquet/; wget -O /dbfs/tmp/delta_demo/loans_parquet/loans.parquet http://pages.databricks.com/rs.094-YMS-629/images.SAISEUI19-loan-risks.snappy.parquet
+
+```
+
+- lit(literal) is used to give any hard-coded value
+- read the file add new 2 columns and save it as a delta table
+```
+parquet-path = "file:dbfs/tmp/delta_demo/loans_parquet/"
+
+df = (spark.read.format("parquet").load(parquet_path)
+    .withColumn("type", lit("batch"))
+	.withColumn("timestamp", current_timestamp())
+
+df.write.format.("delta").mode("overwrite").saveAsTable("loans_delta")
+
+```
+
+
+create another delta table from the parquet file
+
+```
+%sql
+CREATE TABLE loans_delta2
+USING delta
+AS SELECT * FROM parquet.'/tmp/delta_demo/loans_parquet`
+
+
+```
+
+9.56
+use convert to delta to convert the Parquet file to Delta Lake format in place( means the file will become delta table )
+
+```
+%sql
+CONVERT TO DELTA parquet.'/tmp/delta_demo/loans_parquet`
+```
+
+- quey delta table
+```
+%sql
+SELECT COUNT(*) FROM loans_delta'
+```
+- use show 
+```
+spark.sql("select count(*) from loans_delta").show()
+
+spark.sql("select * from loans_delta").show(3)
+```
+
+- streaming function
+
+```
+%python
+# User-defined fucntion to generate random state
+@udf(retuenType=StringType())
+def random_state():
+   return str(random.choice(["CA", "TX", "NY", "WA"])
+   
+# Function to start a streaming query witha stream of randomly generetd load data and append to the parquet table
+def generete_and_append_data_stream(table_format, table_name, schema_ok=False, type="batch")"
+    stream_data = (spark.readStream.format("rate").option('rowsPerSecond", 500).load()
+	.withColumn("loan_id", 1000+ col("value"))
+	.withColumn("funded_amnt", (rand() * 5000 + 5000).cast("integer"))
+	.withColumn("paidAmount", col("funded_amnt") - (rand() * 2000))
+	.withColumn("addr_state", ramdom)state())
+	.withColumn("type", lit(type)))
+
+if schema_ok:
+    stream_data = .select("loan_id", "funded_amnt", "paidAmount", "addr_state", "type", "timestamp")
+
+query = (stream_data.writeStream
+    .format(tableFormat)
+	.option("checkpointLocation", my_checkpoint_dir())
+	.trigger(processingTime = "5 seconds")
+	.table(table_name)
+	
+return query
+
+```
+
+- live query streaming table
+Stop the execution or else it keeps reading continuously
+```
+display(spark.readStream.format("delta").tabel("loans_delta").groupBy("type").count().orderBy("type"))
+
+```
+- group by time window
+
+```
+display(spark.readStream.format("delta").tabel("loans_delta").groupBy("type", window("timestamp", "10 seconds")).count().orderBy("window"))
+
+```
+
+- custom function to stop all streams or can be stopped by clicking stop stream button
+```
+# function to stop all streaming queries
+def stop_all_streams():
+    print("stopping all streams")
+	for s in spark.stream.active:
+	    try:
+			s.stop()
+		except:
+			pass
+	print("stopped all streams")
+	dbutils.fs.rm('/tmp/delta_demo/chkpt/", True)
+	
+def cleanup_paths_and_tables():
+    dbutils.fs.rm("/tmp/delta_demo/", True)
+	dbutils.fs.rm("file:dbfs/tmp/delta_demo/loans_parquet/", True)
+	
+	for table in ["deltadb.loans_parquet", "deltadb.loans_delta", "deltadb.loans_delta2"]:
+	    spark.sql(f" DROP TABLE IF EXISTS {table}")
+		
+```
+
+- fetch history
+
+```
+%sql DESCRIBE HISTORY loans_delta
+```
+
+- data frame with extra column and add the data 
+
+```
+form pyspark.sql.types import
+import datetime
+from datetime import *
+
+# Generate new_dat with additional columns
+new_column = [StructFiels("credit_score", IntegerType(), True)]
+new_schema = StructType(spark.table("loans_delta").schema.fields + new_colum)
+
+data = [(999997, 10000, 13338.5, "CA", "batch", datetime.now(), 649),
+(999998, 20000, 14498.5, "NY", "batch", datetime.now(), 702)]
+
+new_data = spark.creaetDataFrame(dat, new_schema)
+new_data.printSchema()
+
+```
+
+-  Merge new data frame with new column  to delta table 
+you will get the error - schema enforcement 
+in order to merge use option - schema evolution
+
+```
+new.data.write.format("delta").mode("append").saveAsTable("loans_delta")
+
+new.data.write.format("delta").mode("append").option("mergeSchema", True).saveAsTable("loans_delta")
+
+```
+
+- show the first version of the file
+```
+spark.sql("SELECT * FROM  loans_delta VERSION AS OF 0").SHOW(3)
+spark.sql("SELECT COUNT(*) FROM  loans_delta VERSION AS OF 0").SHOW(3)
+
+```
+
 
 
 
