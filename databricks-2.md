@@ -181,7 +181,7 @@ SET spark.databricks.delta.retensionDurationCheck.enabled = True;
 - Vacuum run command to **list files** which will get deleted. This command will give an error as we have set the retention period is 0 and the default is 164 hours which is 7 days. we can suppress error by changing the property to False given in the above command
 ```
 %sql
-VACCUM delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' RETAIN 0 HOURS DRY RUN
+VACCUM delta.'abfss://testcontainer@test.dfs.core.windows.net/test' RETAIN 0 HOURS DRY RUN
 ```
 
 - Vacuum run command to **delete files**
@@ -190,7 +190,81 @@ VACCUM delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' RETAIN 0 HO
 VACCUM delta.'abfdss://testcontainer@test.dfs.core.windows.net/test' RETAIN 0 HOURS
 ```
 
+## Merge command in delta table
 
+INSERT or UPDATE parquet: 7-step process\
+1. Identify the new row to be inserted
+2. Identify the rows that will be replaced(i.e. updated)
+3. Identify all of the rows that are not impacted by the insert or update
+4. Create a new temp based on all three insert statements
+5. Delete the original table (and all of those associated files)
+6. "Rename" the temp table back to the original table name
+7. Drop the temp table
+
+- Read sample delta file from DBFS 
+
+```
+read_format = 'delta'
+load_path = '/databricks-datasets.learning-spark-v2/people/people-10m.delta'
+
+people = spark.read \
+   .format(read_format)
+   .load(load_path)
+   
+display(people)
+
+```
+
+- Saving a delta table from the file data 
+
+```
+%sql
+people.write \
+    .format("delta") \
+	.saveAsTable("people10m")
+
+display(spark.sql("SELECT * FROM people10m"))
+
+```
+
+- Create another table with the same schema for the merge operation
+  - Managed vs unmanaged: Tables created with a specified LOCATION are considered unmanaged by the meta store. Unlike a managed table, where no path is specified, an unmanaged table's files are not deleted when you DROP the table.
+
+```
+%sql
+CREATE TABLE default.people10m_upload01 (
+  id INT,
+  firstName STRING,
+  middleName STRING,
+  lastName STRING,
+  gender STRING,
+  birthDate TIMESTAMP,
+  ssn STRING,
+  salary INT
+)USING DELTA
+```
+
+
+- Insert the same records from the Databricks sample data set into  the newly created table
+```
+%sql
+
+INSERT INTO default.people10m_upload01 VALUES
+ (9999997, 'billy', 'Tom', 'Lupit', 'M', '1992-09-17T12:01:00,000+000', '954-954-3453', 55250),
+ (9999998, 'Harry', 'Jack', 'Thon', 'M', '1982-19-27T12:01:00,000+000', '954-122-3453', 155250),
+ (9999999, 'Tim', 'bily', 'Smith', 'M', '1985-19-27T12:01:00,000+000', '974-122-3487', 15253),
+```
+
+- Now merge both the new and old table
+  - if records are present then after matching keys in the target table the update will happen else insert
+```
+%sql
+MERGE INTO default.people10m
+USING default.people10m_upload01
+ON default.people10m.id = default.people10m_upload01.id
+WHEN MATCHED THEN UPDATE SET *
+WHEN NOT MATCHED THEN INSERT *
+```
 
 
 
