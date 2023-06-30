@@ -321,7 +321,7 @@ display(loans)
 ```
 loans.format("delta").mode("append").save(DELTALAKE_SILVER_PATH)
 
-``
+```
 
 You will give error analysisException  bcoz of schema mismatch 
 
@@ -330,7 +330,7 @@ You will give error analysisException  bcoz of schema mismatch
 ```
 loans.option("mergeSchema", "true").format("delta").mode("append").save(DELTALAKE_SILVER_PATH)
 
-``
+```
 We can also turn off errors by using `spark.databricks.delta.schema.autoMerge = True` into spark config
 
 
