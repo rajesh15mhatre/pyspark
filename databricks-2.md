@@ -267,6 +267,72 @@ WHEN NOT MATCHED THEN INSERT *
 ```
 
 
+## Schema evolution in delta table
+
+ SCema evolution is a feature that allows users to easily change a table's current schema to accommodate data that is changing over time. Most commonly, it's used when performing an append or overwrite operation, to automatically adapt the schema to include one or more new columns
+ 
+ 
+ ```
+ %python
+ DELTALAKE_SILVER_PATH = "/ml/loan_by_state_delta"
+ # read a sample parquet file
+ lspq_path = "/databricks-datasets/samples/lending_club/parquet/"
+ # Read file
+ data = spark.read.parquet(lspq_path)
+# Takeout sample data
+(loan_stats, loan_stats_rest) = data.randomSplit([0.01, 0.99]), seed = 123)
+
+# select needed columns
+ loan_by_state = loan_stat.select("addr_state", "load_status")groupBy("addr_state").count()
+
+# create a table 
+loan_by_state.createOrReplaceTempView("loan_by_state")
+display(loan_by_state)
+
+ ```
+
+- create a table from aggregated data
+
+```
+%sql 
+CREATE TABLE loan_by_state_delta
+USING delta
+LOCATION "/ml/loan_by_state_delta"
+AS SELECT * FROM loan_by_state;
+
+--View delta lake table
+SELECT * FROM loan_by_state_delta;
+
+```
+- create a new table with a different schema
+```
+loans = sql("SELECT addr_state, cast(rand(10)*count as bigint) as count, cast(rand(10) * 10000 * count as double) as amount from loan_by_state_delta")
+
+display(loans)
+
+```
+
+- append new data with different schema into the existing delta table 
+- Operation will show an error if:
+   - data column name is different and also the case is different
+   - contains an additional column
+   - column with different data types like date columns having integer values
+
+```
+loans.format("delta").mode("append").save(DELTALAKE_SILVER_PATH)
+
+``
+
+You will give error analysisException  bcoz of schema mismatch 
+
+- Appends new data without error using option option("mergeSchema", "true")
+
+```
+loans.option("mergeSchema", "true").format("delta").mode("append").save(DELTALAKE_SILVER_PATH)
+
+``
+We can also turn off errors by using `spark.databricks.delta.schema.autoMerge = True` into spark config
+
 
 
 
