@@ -505,6 +505,60 @@ spark.sql("SELECT COUNT(*) FROM  loans_delta VERSION AS OF 0").SHOW(3)
 
 ```
 
+## Parameterized notebook to productionise job
+
+
+- Creating widgets and imports
+```
+from pyspark.sql.functions import col, max, dense_rank
+from pyspark.sql.window import Window
+
+dbutils.widgets.dropdown("database", "TESTDATABASE", ["TESTDATABASE"])
+dbutils.widgets.dropdown("schema", "SCHEMA", ["SCHEMA"])
+dbutils.widgets.dropdown("warehouse", "WAREHOUSE", ["WAREHOUSE"])
+dbutils.widgets.dropdown("table", "Airlines", ["Airlines"])
+
+```
+
+- Connect to Snowflake
+```
+ooptions= {
+	"sfUrl": "snowflakeurl",
+	"sfUser": "user",
+	"sfPassword": "pass",
+	"sfDatabase": dbutils.widget.get("database"),
+	"sfSchema": dbutils.widget.get("schema"),
+	"sfWarehouse: dbutils.widget.get("warehouse")
+}
+
+
+- filer and group by on df
+```
+df = airlines_df.filter(lower(airlines_df.IsDepDelayed) == "yes")
+
+df_DelayedAggCount = df.groupby("UniqueCarrier").agg({"IsDepDelayed": "count"})
+```
+
+
+- windows function
+```
+windowSpec = Window.partitionBy().orderBy(desc("count(IsDepDelayed)"))
+
+df_top5 = df_DelayedAggCount.withColumn("denserank", dense_rank().over(windowSpec)) \
+.where(col("denserank")<=5).select("UniqueCarrier","count(IsDepDelayed)")
+
+```
+
+- Write to Snowflake using the parameter
+```
+df_top5.write.format("snowflake").options(**options).mode("overwrite").option("dbtable", dbutils.widget.get("table")).save()
+
+```
+
+- Create a job 
+workflow - create job - give task name - select notebook - select cluster 
+in the same window, you will get the parameter option 
+
 
 
 
