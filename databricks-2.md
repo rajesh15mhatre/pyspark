@@ -561,5 +561,22 @@ in the same window, you will get the parameter option
 
 
 
+## Databricks jobs
+
+Under WOrkflow, we have below options
+- jobs
+- Job Runs
+- Delta live tables
+
+we can connect to Git 
+we can schedule job  which supports cron syntax
+Also, add an email to send job status notification
+We can give permission to other people/groups for the job
+
+- While creating a job we can find the below options in advance settings
+  - Add dependent libraries
+  - Edit notification
+  - Edit retry policy
+  - Edit timeout
 
 
