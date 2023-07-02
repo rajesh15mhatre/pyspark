@@ -579,4 +579,35 @@ We can give permission to other people/groups for the job
   - Edit retry policy
   - Edit timeout
 
+## Databricks CI/CD
 
+your azure dev ops account and Databricks account should be the same microsoft account 
+
+- Goto Azure DevOps - create projects -
+give name - click create 
+
+- under repo - click on Intialise to create a repo
+
+- we can establish ci/cd in two ways
+ 1. Legacy way
+  - goto databricks -> workspace -> user-> select any script 
+  - Under revision history, you will get all previous script versions and an option to link the script to git (this is an old feature)
+  - not a recommended option as all the users must need to create a DevOps account and link the script to the repo
+ 
+ 
+ 2. Preferred way
+  - goto data bricks repo - users - add repo  - paste path of git repository created under azure devops (We can use any provider like GitHub, bitbucket)
+  - repo dir will be visible 
+  - now push/pull options are available under options of repo folder having branch name).
+  - Select the git option to see the changes
+  
+  - for the schedule notebook, you can add a release folder (with any name) to user workspace and keep only the latest notes which will run on production 
+  - We can also restrict certain commands for repos  under data bricks admin console - repo section 
+  
+- create pipelines to automatically pull latest file to release/schedule
+  - goto DevOps - pipelines - create pipelines
+  - select versioning tools - select project
+  - select yaml
+  - Yaml file has all variables like VM, software to install like data brick CLI,  credential, branch name, code to delete existing files from release dire and paste new from latest branch
+  - this file will get saved and repo 
+  - We can write file types to ingnore in a file named .artifactignore 
