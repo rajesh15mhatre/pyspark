@@ -600,13 +600,66 @@ give name - click Create
   - now push/pull options are available under options of repo folder having branch name).
   - Select the git option to see the changes
   
-  - for the schedule notebook, you can add a release folder (with any name) to user workspace and keep only the latest notes which will run on production 
-  - We can also restrict certain commands for repos  under data bricks admin console - repo section 
+  - for the schedule notebook, you can add a release folder (with any name) to the user workspace and keep only the latest notes which will run on production 
+  - We can also restrict certain commands for repos  under the data bricks admin console - repo section 
   
-- create pipelines to automatically pull latest file to release/schedule
+- create pipelines to automatically pull the latest file to release/schedule
   - goto DevOps - pipelines - create pipelines
   - select versioning tools - select project
   - select yaml
   - Yaml file has all variables like VM, software to install like data brick CLI,  credential, branch name, code to delete existing files from release dire and paste new from latest branch
   - this file will get saved and repo 
-  - We can write file types to ignore in a file named .artifactignore 
+  - We can write file types to ignore in a file named .artifactignore
+  - 
+
+  # medallion architecture and change data feed
+- A medallion architecture is a data design pattern used to logically organize data in a lakehouse, with the goal of incrementally and progressively improving the structure and quality of data as its architectures are sometimes also referred to as **multi-hop architecture**.
+
+There are three forms of data 
+- Bronze: Raw data where the schema is not needed
+- Silver: Where we define the structure, enforce a schema, and evolve the schema as needed
+- Gold : Deliver continuously updated, clean data to downstream users and apps
+
+**Change Data Feed(CFD)**: feature allows Delta table to track row-level changes between versions  of a Delta table. When enabled on the Delta table, the runtime records "change events" for all the data written into the table. This includes the troe data along with metadata indicating whether the specified toe was inserted, deleted, or updated.
+
+The changes data feed is not enabled by default we can set it while creating a table or by altering the table
+
+```
+CREATE TABLE student (id INT, name STRING, age INT) TBLPROPERTIES (delta.enabledChangeDataFeed=true)
+
+ALTER TABLE myDeltaTable SET TBLPROPERTIES (delta.enabledChangeDataFeed = true)
+
+set spark.databricks.delta.properties.defaults.enabledChangeDataFeed = true;
+
+```
+
+Use cases: The following use cases should drive when you enable the change data feed:
+- Silver and Gold Tables: Improve Delta performance by processing only row-level changes following initial MERGE, UPDATE, or DELETE operation to accelerate and simplify ETL and ELT.
+
+- Materialised view: Create up-to-date, aggregated views of information for use in BI and analytics without having to reprocess the full underlying tables, instead updating only where changes have come through.
+
+- Transmit changes: Send change of data feed to the downstream system such as Kafaka or RDBMS that can use to incrementally process in later stages of data pipelines.
+
+- Audit Trail: Capture the change data feed as a Delta table provides perpetual storage and efficient query capability to see all changes over time, including when deletes occur and what updates were made.
+
+
+-- Fetch  table changes of delta table with commit version 1
+```
+SELECT * FROM table_changes('table_name', 1)
+
+```
+
+
+- To fetch data from change feed for a specific commit say 2 from an upstream table to feed the downstream table 
+
+```
+MERGE INTO downstream_table d
+USING
+	(SELECT * FROM table_changes('upstream_table', 2))
+	AS u
+ON u.id = d.id 
+WHEN MATCHED THEN
+	UPDATE SET d.col = u.col
+WHEN NOT MATCHED
+	THEN INSERT (col1, col2) VALUES (val1, val2)
+``` 
