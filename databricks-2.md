@@ -530,7 +530,7 @@ ooptions= {
 	"sfSchema": dbutils.widget.get("schema"),
 	"sfWarehouse: dbutils.widget.get("warehouse")
 }
-
+```
 
 - filer and group by on df
 ```
@@ -552,7 +552,6 @@ df_top5 = df_DelayedAggCount.withColumn("denserank", dense_rank().over(windowSpe
 - Write to Snowflake using the parameter
 ```
 df_top5.write.format("snowflake").options(**options).mode("overwrite").option("dbtable", dbutils.widget.get("table")).save()
-
 ```
 
 - Create a job 
@@ -563,7 +562,7 @@ in the same window, you will get the parameter option
 
 ## Databricks jobs
 
-Under WOrkflow, we have below options
+Under Workflow, we have below options
 - jobs
 - Job Runs
 - Delta live tables
@@ -573,7 +572,7 @@ we can schedule job  which supports cron syntax
 Also, add an email to send job status notification
 We can give permission to other people/groups for the job
 
-- While creating a job we can find the below options in advance settings
+- While creating a job we can find the below options in advanced settings
   - Add dependent libraries
   - Edit notification
   - Edit retry policy
@@ -581,10 +580,10 @@ We can give permission to other people/groups for the job
 
 ## Databricks CI/CD
 
-your azure dev ops account and Databricks account should be the same microsoft account 
+your azure dev ops account and Databricks account should be the same Microsoft account 
 
 - Goto Azure DevOps - create projects -
-give name - click create 
+give name - click Create 
 
 - under repo - click on Intialise to create a repo
 
@@ -610,4 +609,4 @@ give name - click create
   - select yaml
   - Yaml file has all variables like VM, software to install like data brick CLI,  credential, branch name, code to delete existing files from release dire and paste new from latest branch
   - this file will get saved and repo 
-  - We can write file types to ingnore in a file named .artifactignore 
+  - We can write file types to ignore in a file named .artifactignore 
