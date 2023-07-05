@@ -662,4 +662,45 @@ WHEN MATCHED THEN
 	UPDATE SET d.col = u.col
 WHEN NOT MATCHED
 	THEN INSERT (col1, col2) VALUES (val1, val2)
-``` 
+```
+
+- Using the change data feed we can get the previous version of the upstream table which has data feed enabled and populate the downstream tables which do not have data feed enabled
+
+
+## Change data feed demo
+
+-- Write data feed changes in df
+```
+changes_df = spark.read.format("delta").option("readChangeData", True).option("startingVersion", 2).table("tablename")
+```
+
+## Join strategy in spark 
+- Spark decides what algorithm will be used for joining the data in the phase of physical planning, where each node in the logical plan has to be converted to one or more operators in the physical plan using so-called strategies. The strategy responsible for planning the join is called Join selection.
+Five types of strategies
+- Broadcast Hash join: If your df is up to a certain threshold in size then It is considered as smaller df. Then smaller df is available in memory to each node and it gets joined with a larger df.
+  - Using spark config we can get/set the threshold memory value in bytes
+```
+%scala
+spark.conf.get("spark.sql.autoBroadcastJoinThreshold")
+spark.conf.set("spark.sql.autoBroadcastJoinThreshold", 10485760)
+```
+  - Get joined query execution plan
+```
+dfJoined.queryExecution.executedPlan
+```
+  - We can explicitly tell which df to be broadcasted (df stored in memory on each node)
+```
+val dfJoined = df1.join(broadcast(df2), $"id1" === $"id2")
+```
+  - Broad cast Hash Join is the fastest join algorithm (as shuffle is not involved) when the following criteria are met
+    - Works only for equi join
+    - Works for all joins except for full outer joins
+    - Broadcast Hasj join works when a dataset is small enough that it can be broadcasted and hashed.
+    - broadcast Has join doesn't work well if the dataset that is being broadcasted is big
+    - If the size of the broadcasted dataset is big, it could become network-intensive operations and cause your jo execution to slow down
+    - If the size of the broadcasted dataset is big, you would get an OutO Memory exception when Spark builds the Hash table on the data. Because the hash table will be kept in memory.
+- Shuffle Hash join
+- Shuffle sort Merge join
+- Cartesian Join
+- Broadcasted Nested Loop Join
+
