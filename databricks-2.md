@@ -674,7 +674,7 @@ WHEN NOT MATCHED
 changes_df = spark.read.format("delta").option("readChangeData", True).option("startingVersion", 2).table("tablename")
 ```
 
-##35.  Join strategy in spark 
+## 35.  Join strategy in spark 
 - Spark decides what algorithm will be used for joining the data in the phase of physical planning, where each node in the logical plan has to be converted to one or more operators in the physical plan using so-called strategies. The strategy responsible for planning the join is called Join selection.
 Five types of strategies
 - Broadcast Hash join: If your df is up to a certain threshold in size then It is considered as smaller df. Then smaller df is available in memory to each node and it gets joined with a larger df.
