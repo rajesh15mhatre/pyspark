@@ -677,7 +677,7 @@ changes_df = spark.read.format("delta").option("readChangeData", True).option("s
 ## 35.  Join strategy in spark 
 - Spark decides what algorithm will be used for joining the data in the phase of physical planning, where each node in the logical plan has to be converted to one or more operators in the physical plan using so-called strategies. The strategy responsible for planning the join is called Join selection.
 Five types of strategies
-- Broadcast Hash join: If your df is up to a certain threshold in size then It is considered as smaller df. Then smaller df is available in memory to each node and it gets joined with a larger df.
+- **Broadcast Hash join**: If your df is up to a certain threshold in size then It is considered as smaller df. Then smaller df is available in memory to each node and it gets joined with a larger df.
   - Using spark config we can get/set the threshold memory value in bytes
 ```
 %scala
@@ -692,17 +692,108 @@ dfJoined.queryExecution.executedPlan
 ```
 val dfJoined = df1.join(broadcast(df2), $"id1" === $"id2")
 ```
-  - Broad cast Hash Join is the **fastest join algorithm (as shuffle is not involved)** when the following criteria are met
+  - Broadcast Hash Join is the **fastest join algorithm (as shuffle is not involved)** when the following criteria are met
     - Works only for equi join
     - Works for all joins except for full outer joins
-    - Broadcast Hasj join works when a dataset is small enough that it can be broadcasted and hashed.
+    - Broadcast Hash join works when a dataset is small enough that it can be broadcasted and hashed.
     - broadcast Has join doesn't work well if the dataset that is being broadcasted is big
     - If the size of the broadcasted dataset is big, it could become network-intensive operations and cause your jo execution to slow down
     - If the size of the broadcasted dataset is big, you would get an OutOfMemory exception when Spark builds the Hash table on the data. Because the hash table will be kept in memory.
 
-- Shuffle Hash join
-  - 
-- Shuffle sort Merge join
-- Cartesian Join
-- Broadcasted Nested Loop Join
+- **Shuffle Hash join**
+  - It consists of moving data between executors. Shuffle Hash join involves moving data with the same value of join key in the same executor node followed by Hash join, Using the join condition as output key, data is shuffled amongst executor nodes and in the last
+step, data is combined using Hash join, as we know data of the same key will be present  in the same executor.
+  - Concepts:
+    - it only supports equi join
+    - it works when, sort-merge join is disabled (spark.sql.preferSortMergeJoin=False), default is true
+    - Single partition of given logical plan is small enough to build a hash table - small enough means here that the estimated size of the physical plan for one of the joined columns is smaller than the result of **spark.sql.autoBroadcasrJoinThreshold * spark.sql.shuffle.partitions** in other words, its most worthwhile to hash and shuffle data than to broadcast ot to all executors.
+    - doesn't support full outer join
+    - In my opinion its an expensive join in a way that involves bith shuffling ans hashing. Maintaining a hash tanle requier memory and computation.
+- It will only work when above 2 point with braoadcast is not possible
+- Hands On
+```
+# Setting broadcasteJoin disabled by passing -1 so shufflehash join will be executed
+spark.conf.set("spark.sql.autoBroadcastJoinThreshold", 
+"-1")
+## deactivating sortMergeJoin
+spark.conf.set("spark.sql.join.preferSortMergeJoin", "false")
+
+```
+```
+// performig join
+val inMemoryCustomersDataFrame = Seq( (1, "Customer_1") ).toDF("id", "login")
+
+val inMemoryOdersDataFrame = Sql(
+(1,1,50.0d), (2,2,10d), (3,2,,10d), (4,2,10d)
+).toDF("id", "cust_id", "amt")
+
+val orderByCust = inMemoryOrdersDataFrame.join(inMemoryCustomerDataFrame, inMemoryOrdersDataFrame("cust_id") === inMemoryCustomerDataFrame("id"),  "left")
+
+orderByCust.foreach(customerOrder => {
+	println("> " + customerOrder)
+}
+
+//check execution plan
+val queryExecution = orderByCust.queryExecution.toString()
+
+
+```
+- **Shuffle sort Merge join**
+  - It involves, shuffling of data to get the same join_key with the same worker, and then performing sort-merge join operation at the partition level in the woker nodes
+  - It supports all joins
+  - Hands on
+```
+//set below option true to use sortMergeJoin
+spark.conf.set("spark.sql.join.preferSortMergeJoin", "true")
+```
+
+```
+val cust_df = (1 to 3).map(num=> (num, s"Customer_{num}")).toDF("cid", "login")
+val order_df = Seq(
+	(1,1,50.0d), (2,2,10d), (3,2,,10d), (4,2,10d)
+).toDF("id", "cust_id", "amt")
+
+val orderWithCust = order_df.join(cust_df, $"customers_id" === $"cid")
+val mergedOrdersWIthCustomers = orderWithCust.collect()
+val explainPlan = orderWithCust.queryExecution.toString()
+ 
+```
+- **Cartesian Join**
+  - a.k.a. shuffle and replication nested loop, It works very similart tobroadcast Nested Loop join except the dataset is not broadcasted.
+  - Rather sending records with same keys to the same partition. instead of the dataset is sent over or replocated to all the partition for a full cross or netsted loop join
+  - works in both equi and non equi joins
+  - works only on innerlike joins
+  - very expensive join, except load on the netwirls ans partitions are moved across the network.
+  - High possibility of out of memory exception.
+  - HandsOn
+```
+val data1 = Seq(10,20,20,30,40,40,50,60)
+val df1 = data1.toDF("id1")
+
+val data2 Seq(30,20,40,50)
+val df2 = data2.toDF("id2")
+//perform cartesiona as it not equi join
+val dfJoined = df1.join(df2, $"id1" >= $"id2")
+
+```
+- **Broadcasted Nested Loop Join:**
+  - It works ny bradcasting one of the entire dataset ans performaing a nested loop to join the ata. so every records from dataset1 is attem[tig to join with every record from dataset2. its not preffered an could be slow.
+```
+// increase braodcaste threshold value to enable the broadcast 
+spark.conf.set("spark.sql.autoBroadcastJoinThreshold", 10485760)
+
+//perfrom same join as done in last example now it will use braodcast nested loop strtegy as we have increased threshold
+```
+
+strategy for not '=' join
+1. broadcast nested loop
+2. cartesian product if join type is inner like
+
+- Strategy for '=' join
+if the broadcast threshold is met then broadcast hash join will happen
+if broadcast threshold is not met and sort-merge join is not disabled then sort-merge join will hapen
+if broadcast threshold is not met and sort-merge join is disabled then shuffle has join will happen
+else cartesian produt will happen based on setiings
+
+  
 
