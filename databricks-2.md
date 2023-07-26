@@ -789,10 +789,10 @@ strategy for not '=' join
 1. broadcast nested loop
 2. cartesian product if join type is inner like
 
-- Strategy for '=' join
-if the broadcast threshold is met then broadcast hash join will happen
-if broadcast threshold is not met and sort-merge join is not disabled then sort-merge join will hapen
-if broadcast threshold is not met and sort-merge join is disabled then shuffle has join will happen
+- Strategy for '=' join<br>
+if the broadcast threshold is met then broadcast hash join will happen<br>
+if broadcast threshold is not met and sort-merge join is not disabled then sort-merge join will hapen<br>
+if broadcast threshold is not met and sort-merge join is disabled then shuffle has join will happen<br>
 else cartesian produt will happen based on setiings
 
   
